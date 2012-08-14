@@ -6,11 +6,16 @@
 /**
  * Define ExposeTranslation singleton class.
  */
-var ExposeTranslation = new function () {
+window.ExposeTranslation = (function () {
   var _messages = {},
       _sPluralRegex = /^\w+\: +(.+)$/,
       _cPluralRegex = /^\s*(({\s*(\-?\d+[\s*,\s*\-?\d+]*)\s*})|([\[\]])\s*(-Inf|\-?\d+)\s*,\s*(\+?Inf|\-?\d+)\s*([\[\]]))\s?(.+?)$/,
-      _iPluralRegex = /^\s*({\s*(\-?\d+[\s*,\s*\-?\d+]*)\s*})|([\[\]])\s*(-Inf|\-?\d+)\s*,\s*(\+?Inf|\-?\d+)\s*([\[\]])/;
+      _iPluralRegex = /^\s*({\s*(\-?\d+[\s*,\s*\-?\d+]*)\s*})|([\[\]])\s*(-Inf|\-?\d+)\s*,\s*(\+?Inf|\-?\d+)\s*([\[\]])/,
+      _locale,
+      _prefix,
+      _suffix,
+      _defaultDomains,
+      pluralSeparator;
 
   /**
    * replace placeholders in given message.
@@ -22,9 +27,7 @@ var ExposeTranslation = new function () {
    * @api private
    */
   function replace_placeholders(message, placeholders) {
-    var _i,
-        _prefix = ExposeTranslation.placeHolderPrefix,
-        _suffix = ExposeTranslation.placeHolderSuffix;
+    var _i;
 
     for (_i in placeholders) {
       var _r = new RegExp(_prefix + _i + _suffix, 'g');
@@ -47,16 +50,11 @@ var ExposeTranslation = new function () {
    * @api private
    */
   function guess_domain(key) {
-    var _k,
-        _defaultDomains = ExposeTranslation.defaultDomains;
-
-    if (ExposeTranslation.defaultDomains.constructor != Array) {
-      _defaultDomains = [ExposeTranslation.defaultDomains];
-    }
+    var _k;
 
     for (_k in _defaultDomains) {
-      if (ExposeTranslation.has(_defaultDomains[_k] + ':' + key)) {
-        return ExposeTranslation.get(_defaultDomains[_k] + ':' + key);
+      if (has(_defaultDomains[_k] + ':' + key)) {
+        return get(_defaultDomains[_k] + ':' + key);
       }
     }
 
@@ -93,7 +91,7 @@ var ExposeTranslation = new function () {
         _e,
         _explicitRules = [],
         _standardRules = [],
-        _parts = message.split(ExposeTranslation.pluralSeparator),
+        _parts = message.split(_pluralSeparator),
         _matches = [];
 
     for (_p in _parts) {
@@ -171,7 +169,6 @@ var ExposeTranslation = new function () {
    * @api private
    */
   function plural_position(number) {
-    var _locale = ExposeTranslation.locale || ExposeTranslation.fallback;
 
     if ('pt_BR' === _locale) {
         _locale = 'xbr';
@@ -313,49 +310,33 @@ var ExposeTranslation = new function () {
     }
   }
 
+  function has(key) {
+    return (_messages[key] ? true : false);
+  }
+
+  function get(key, placeholders, number) {
+    var _message = _messages[key],
+        _number = parseInt(number),
+        _placeholders = placeholders || {};
+
+    if (_message == undefined) {
+      _message = guess_domain(key);
+    }
+
+    if (_message == undefined) {
+      _message = key;
+    }
+
+    if (_message && !isNaN(_number)) {
+      _message = pluralize(_message, _number);
+    }
+
+    _message = replace_placeholders(_message, _placeholders);
+
+    return _message;
+  }
+
   return {
-    /**
-     * The current locale.
-     *
-     * @type {String}
-     * @api public
-     */
-    locale: '',
-    /**
-     * Fallback locale.
-     *
-     * @type {String}
-     * @api public
-     */
-    fallback: 'en',
-    /**
-     * Placeholder prefix.
-     *
-     * @type {String}
-     * @api public
-     */
-    placeHolderPrefix: '%',
-    /**
-     * Placeholder suffix.
-     *
-     * @type {String}
-     * @api public
-     */
-    placeHolderSuffix: '%',
-    /**
-     * Default domains.
-     *
-     * @type {String|Array}
-     * @api public
-     */
-    defaultDomains: [],
-    /**
-     * Plurar separator.
-     *
-     * @type {String}
-     * @api public
-     */
-    pluralSeparator: '|',
     /**
      * Add a translation entry.
      *
@@ -376,27 +357,7 @@ var ExposeTranslation = new function () {
      * @param {Number} number         A number of objects being described.
      * @return {String}       The corresponding message if the key exists otherwise the key will be returned.
      */
-    get: function(key, placeholders, number) {
-      var _message = _messages[key],
-          _number = parseInt(number),
-          _placeholders = placeholders || {};
-
-      if (_message == undefined) {
-        _message = guess_domain(key);
-      }
-
-      if (_message == undefined) {
-        _message = key;
-      }
-
-      if (_message && !isNaN(_number)) {
-        _message = pluralize(_message, _number);
-      }
-
-      _message = replace_placeholders(_message, _placeholders);
-
-      return _message;
-    },
+    get: get,
     /**
      * Determines wether a message is registered or not.
      *
@@ -404,8 +365,49 @@ var ExposeTranslation = new function () {
      * @return {Boolean}    Wether the message is registered or not.
      * @api public
      */
-    has: function(key) {
-      return (_messages[key] ? true : false);
+    has: has,
+
+    set: function (settings) {
+      /**
+       * The current locale.
+       *
+       * @type {String}
+       * @api public
+       */
+      _locale= settings.locale || settings.fallback || 'en';
+      /**
+       * Placeholder prefix.
+       *
+       * @type {String}
+       * @api public
+       */
+      _prefix= settings.placeHolderPrefix || '%';
+      /**
+       * Placeholder suffix.
+       *
+       * @type {String}
+       * @api public
+       */
+      _suffix= settings.placeHolderSuffix || '%';
+      /**
+       * Default domains.
+       *
+       * @type {String|Array}
+       * @api public
+       */
+      _defaultDomains= (function (defaultDomains){
+        if (defaultDomains.constructor != Array) {
+          return [defaultDomains];
+        }
+        return defaultDomains;
+      }(settings.defaultDomains || []));
+      /**
+       * Plurar separator.
+       *
+       * @type {String}
+       * @api public
+       */
+      _pluralSeparator= settings.pluralSeparator || '|';
     }
   };
-};
+}());
