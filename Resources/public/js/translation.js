@@ -15,7 +15,7 @@ window.ExposeTranslation = (function () {
       _prefix,
       _suffix,
       _defaultDomains,
-      pluralSeparator;
+      _pluralSeparator;
 
   /**
    * replace placeholders in given message.
@@ -381,14 +381,14 @@ window.ExposeTranslation = (function () {
        * @type {String}
        * @api public
        */
-      _prefix= settings.placeHolderPrefix || '%';
+      _prefix= settings.placeHolderPrefix!=undefined? settings.placeHolderPrefix : '%';
       /**
        * Placeholder suffix.
        *
        * @type {String}
        * @api public
        */
-      _suffix= settings.placeHolderSuffix || '%';
+      _suffix= settings.placeHolderSuffix!=undefined? settings.placeHolderSuffix : '%';
       /**
        * Default domains.
        *

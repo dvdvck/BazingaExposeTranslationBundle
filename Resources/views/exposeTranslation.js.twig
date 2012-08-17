@@ -1,12 +1,10 @@
 ExposeTranslation.set({
-    placeHolderPrefix:'',
-    placeHolderSuffix:'',
-    locale:'{{ locale }}',
-    defaultDomains:[{% if defaultDomains %}"{{ defaultDomains|join('", "')|raw }}"{% endif %}]
+    locale : '{{ locale }}',
+    defaultDomains : [{% if defaultDomains %}"{{ defaultDomains|join('", "')|raw }}"{% endif %}]
 });
-
 {% for domain, translations in messages %}
-    {% for key, message in translations %}
-       ExposeTranslation.add({{ (domain~":"~key)|json_encode|raw }}, {{ message|json_encode|raw }});
-    {% endfor %}
+{% for key, message in translations %}
+ExposeTranslation.add({{ (domain~":"~key)|json_encode|raw }}, {{ message|json_encode|raw }});
 {% endfor %}
+{% endfor %}
+
